@@ -25,5 +25,9 @@ func (s *Server) Run(port string) {
 }
 
 func (s *Server) SetRoutes() {
-
+	s.Router.GET("/ping", func(ctx *gin.Context) {
+		ctx.JSON(200, gin.H{
+			"message": "pong",
+		})
+	})
 }
