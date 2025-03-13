@@ -1,5 +1,7 @@
 package models
 
+import "fmt"
+
 type Project struct {
 	Title       string `json:"title"`
 	Description string `json:"description"`
@@ -12,4 +14,8 @@ func (p *Project) ToMap() map[string]interface{} {
 		"description": p.Description,
 		"tasks":       p.Tasks,
 	}
+}
+
+func (p *Project) String() string {
+	return fmt.Sprintf("Title: %s, Description: %s", p.Title, p.Description)
 }
