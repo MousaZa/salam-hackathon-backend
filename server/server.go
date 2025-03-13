@@ -28,5 +28,6 @@ func (s *Server) Run(port string) {
 }
 
 func (s *Server) SetRoutes() {
-	s.Router.GET("/test", s.NewLearning)
+	s.Router.POST("/new-learning/:id", s.NewLearning)
+	s.Router.GET("/learning/:id", s.GetLearning)
 }

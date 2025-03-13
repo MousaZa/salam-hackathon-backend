@@ -10,7 +10,7 @@ type LearningRequest struct {
 }
 
 func (l *LearningRequest) ToPrompt() string {
-	return fmt.Sprintf(`I want to learn %s in %s programming language, I am a %s and my goal is to %s. List 5 projects to work on to develop my skills using this JSON schema:
+	return fmt.Sprintf(`response in Arabic. I want to learn %s in %s programming language, I am a %s and my goal is to %s. List 5 projects to work on to develop my skills using this JSON schema:
         LearningResponse: { 'title' : string, 'description' : string ,'projects' : [{'title': string , 'description': string, 'tasks': [{'title': string, 'description': string, 'completed': bool}]}]}       
 		Return:   LearningResponse
 	           `, l.FrameWork, l.Language, l.Level, l.Goal)
