@@ -17,12 +17,7 @@ func (s *Server) NewLearning(ctx *gin.Context) {
 
 	session := s.GenAi.StartChat()
 
-	l := models.LearningRequest{
-		// Language:  "Python",
-		// Level:     "Beginner",
-		// FrameWork: "Django",
-		// Goal:      "Build a web application",
-	}
+	l := models.LearningRequest{}
 
 	if err := ctx.BindJSON(&l); err != nil {
 		ctx.JSON(400, gin.H{
@@ -96,9 +91,7 @@ func (s *Server) NewLearning(ctx *gin.Context) {
 		}
 	}
 
-	ctx.JSON(200, gin.H{
-		"data": mr,
-	})
+	ctx.JSON(200, mr)
 }
 
 func (s *Server) GetLearning(ctx *gin.Context) {
@@ -122,7 +115,5 @@ func (s *Server) GetLearning(ctx *gin.Context) {
 		return
 	}
 
-	ctx.JSON(200, gin.H{
-		"data": mr,
-	})
+	ctx.JSON(200, mr)
 }
