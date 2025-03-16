@@ -11,6 +11,16 @@ import (
 	"github.com/google/generative-ai-go/genai"
 )
 
+type Learning struct {
+	Id          string `json:"id"`
+	Language    string `json:"language"`
+	Level       string `json:"level"`
+	FrameWork   string `json:"framework"`
+	Goal        string `json:"goal"`
+	Title       string `json:"title"`
+	Description string `json:"description"`
+}
+
 func (s *Server) NewLearning(ctx *gin.Context) {
 
 	id := ctx.Param("id")
@@ -80,40 +90,69 @@ func (s *Server) NewLearning(ctx *gin.Context) {
 		})
 		return
 	}
+	mr.Language = l.Language
+	mr.Level = l.Level
+	mr.FrameWork = l.FrameWork
+	mr.Goal = l.Goal
 
-	s.Firestore.Client.Collection("learning").Doc(id).Set(context.Background(), mr.ToMap())
-
-	fmt.Printf("Title: %s, Description: %s\n", mr.Title, mr.Description)
-	for j, project := range mr.Projects {
-		fmt.Printf("Projec%vt: %s, Description: %s\n", j, project.Title, project.Description)
-		for i, task := range project.Tasks {
-			fmt.Printf("Task%v: %s, Description: %s\n", i, task.Title, task.Description)
+	lr, _, _ := s.Firestore.Client.Collection("sessions").Doc(id).Collection("learnings").Add(context.Background(), mr.ToMap())
+	mr.Id = lr.ID
+	for _, p := range mr.Projects {
+		p.LearningId = lr.ID
+		pre, _, _ := s.Firestore.Client.Collection("sessions").Doc(id).Collection("projects").Add(context.Background(), p.ToMap())
+		for _, t := range p.Tasks {
+			t.ProjectId = pre.ID
+			s.Firestore.Client.Collection("sessions").Doc(id).Collection("tasks").Add(context.Background(), t.ToMap())
 		}
 	}
-
 	ctx.JSON(200, mr)
 }
 
-func (s *Server) GetLearning(ctx *gin.Context) {
+func (s *Server) GetLearnings(ctx *gin.Context) {
 	id := ctx.Param("id")
 
-	doc, err := s.Firestore.Client.Collection("learning").Doc(id).Get(context.Background())
+	iter := s.Firestore.Client.Collection("sessions").Doc(id).Collection("learnings").Documents(context.Background())
+	docs, err := iter.GetAll()
 	if err != nil {
-		s.Logger.Error("Failed to get learning response", "error", err)
 		ctx.JSON(500, gin.H{
 			"error": "Learning not found",
 		})
 		return
 	}
-
-	var mr models.LearningResponse
-	if err := doc.DataTo(&mr); err != nil {
-		s.Logger.Error("Failed to unmarshal learning response", "error", err)
-		ctx.JSON(500, gin.H{
-			"error": "Failed to unmarshal learning response",
-		})
-		return
+	s.Logger.Debug("mr", docs)
+	var resp []Learning
+	// Now you can iterate through the documents
+	for _, doc := range docs {
+		// Process each document
+		var mr Learning
+		err := doc.DataTo(&mr)
+		mr.Id = doc.Ref.ID
+		if err != nil {
+			s.Logger.Error("Failed to get learning response", "error", err)
+			ctx.JSON(500, gin.H{
+				"error": "Learning not found",
+			})
+		}
+		s.Logger.Debug("mr", mr)
+		resp = append(resp, mr)
+		s.Logger.Debug("resp", resp)
+		// ...
 	}
+	// if err != nil {
+	// 	s.Logger.Error("Failed to get learning response", "error", err)
+	// 	ctx.JSON(500, gin.H{
+	// 		"error": "Learning not found",
+	// 	})
+	// 	return
+	// }
 
-	ctx.JSON(200, mr)
+	// if err := doc.DataTo(&mr); err != nil {
+	// 	s.Logger.Error("Failed to unmarshal learning response", "error", err)
+	// 	ctx.JSON(500, gin.H{
+	// 		"error": "Failed to unmarshal learning response",
+	// 	})
+	// 	return
+	// }
+
+	ctx.JSON(200, resp)
 }

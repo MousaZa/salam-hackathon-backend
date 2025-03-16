@@ -29,7 +29,10 @@ func (s *Server) Run(port string) {
 
 func (s *Server) SetRoutes() {
 	s.Router.POST("/new-learning/:id", s.NewLearning)
-	s.Router.GET("/learning/:id", s.GetLearning)
+	s.Router.POST("/projects/:id", s.GetProjects)
+	s.Router.POST("/tasks/:id", s.GetTasks)
+	s.Router.POST("/tasks/check/:id", s.CheckTask)
+	s.Router.GET("/learnings/:id", s.GetLearnings)
 
 	s.Router.POST("/suggest", s.RequestSuggest)
 }
