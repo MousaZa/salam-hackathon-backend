@@ -19,6 +19,81 @@ type Learning struct {
 	Goal        string `json:"goal"`
 	Title       string `json:"title"`
 	Description string `json:"description"`
+	Progress    int    `json:"progress"`
+}
+
+func (s *Server) GetLearnings(ctx *gin.Context) {
+	id := ctx.Param("id")
+
+	iter := s.Firestore.Client.Collection("sessions").Doc(id).Collection("learnings").Documents(context.Background())
+	docs, err := iter.GetAll()
+	if err != nil {
+		ctx.JSON(500, gin.H{
+			"error": "Learning not found",
+		})
+		return
+	}
+	s.Logger.Debug("mr", docs)
+	var resp []Learning
+	// Now you can iterate through the documents
+	for _, doc := range docs {
+		// Process each document
+		var mr Learning
+		err := doc.DataTo(&mr)
+		mr.Id = doc.Ref.ID
+		if err != nil {
+			s.Logger.Error("Failed to get learning response", "error", err)
+			ctx.JSON(500, gin.H{
+				"error": "Learning not found",
+			})
+		}
+		s.Logger.Debug("mr", mr)
+		iter1 := s.Firestore.Client.Collection("sessions").Doc(id).Collection("projects").Where("learningId", "==", mr.Id).Documents(context.Background())
+		docs1, err := iter1.GetAll()
+		if err != nil {
+			ctx.JSON(500, gin.H{
+				"error": "Learning not found",
+			})
+			return
+		}
+		p := 0
+		for _, doc1 := range docs1 {
+			// Process each document
+			var tr Project
+			err := doc1.DataTo(&tr)
+			if err != nil {
+				s.Logger.Error("Failed to get learning response", "error", err)
+				ctx.JSON(500, gin.H{
+					"error": "Learning not found",
+				})
+			}
+
+			if tr.IsLocked {
+				p++
+			}
+		}
+		mr.Progress = 4 - p
+		resp = append(resp, mr)
+		s.Logger.Debug("resp", resp)
+		// ...
+	}
+	// if err != nil {
+	// 	s.Logger.Error("Failed to get learning response", "error", err)
+	// 	ctx.JSON(500, gin.H{
+	// 		"error": "Learning not found",
+	// 	})
+	// 	return
+	// }
+
+	// if err := doc.DataTo(&mr); err != nil {
+	// 	s.Logger.Error("Failed to unmarshal learning response", "error", err)
+	// 	ctx.JSON(500, gin.H{
+	// 		"error": "Failed to unmarshal learning response",
+	// 	})
+	// 	return
+	// }
+
+	ctx.JSON(200, resp)
 }
 
 func (s *Server) NewLearning(ctx *gin.Context) {
@@ -97,8 +172,13 @@ func (s *Server) NewLearning(ctx *gin.Context) {
 
 	lr, _, _ := s.Firestore.Client.Collection("sessions").Doc(id).Collection("learnings").Add(context.Background(), mr.ToMap())
 	mr.Id = lr.ID
-	for _, p := range mr.Projects {
+	for i, p := range mr.Projects {
 		p.LearningId = lr.ID
+		if i == 0 {
+			p.IsLocked = false
+		} else {
+			p.IsLocked = true
+		}
 		pre, _, _ := s.Firestore.Client.Collection("sessions").Doc(id).Collection("projects").Add(context.Background(), p.ToMap())
 		for _, t := range p.Tasks {
 			t.ProjectId = pre.ID
@@ -106,53 +186,4 @@ func (s *Server) NewLearning(ctx *gin.Context) {
 		}
 	}
 	ctx.JSON(200, mr)
-}
-
-func (s *Server) GetLearnings(ctx *gin.Context) {
-	id := ctx.Param("id")
-
-	iter := s.Firestore.Client.Collection("sessions").Doc(id).Collection("learnings").Documents(context.Background())
-	docs, err := iter.GetAll()
-	if err != nil {
-		ctx.JSON(500, gin.H{
-			"error": "Learning not found",
-		})
-		return
-	}
-	s.Logger.Debug("mr", docs)
-	var resp []Learning
-	// Now you can iterate through the documents
-	for _, doc := range docs {
-		// Process each document
-		var mr Learning
-		err := doc.DataTo(&mr)
-		mr.Id = doc.Ref.ID
-		if err != nil {
-			s.Logger.Error("Failed to get learning response", "error", err)
-			ctx.JSON(500, gin.H{
-				"error": "Learning not found",
-			})
-		}
-		s.Logger.Debug("mr", mr)
-		resp = append(resp, mr)
-		s.Logger.Debug("resp", resp)
-		// ...
-	}
-	// if err != nil {
-	// 	s.Logger.Error("Failed to get learning response", "error", err)
-	// 	ctx.JSON(500, gin.H{
-	// 		"error": "Learning not found",
-	// 	})
-	// 	return
-	// }
-
-	// if err := doc.DataTo(&mr); err != nil {
-	// 	s.Logger.Error("Failed to unmarshal learning response", "error", err)
-	// 	ctx.JSON(500, gin.H{
-	// 		"error": "Failed to unmarshal learning response",
-	// 	})
-	// 	return
-	// }
-
-	ctx.JSON(200, resp)
 }

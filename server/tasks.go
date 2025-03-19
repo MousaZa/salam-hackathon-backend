@@ -86,5 +86,11 @@ func (s *Server) CheckTask(ctx *gin.Context) {
 		return
 	}
 
-	s.Firestore.Client.Collection("sessions").Doc(id).Collection("tasks").Doc(r.Id).Update(context.Background(), []firestore.Update{firestore.Update{Path: "completed", Value: true}})
+	_, err := s.Firestore.Client.Collection("sessions").Doc(id).Collection("tasks").Doc(r.Id).Update(context.Background(), []firestore.Update{firestore.Update{Path: "completed", Value: true}})
+	if err != nil {
+		ctx.JSON(500, gin.H{
+			"error": "Task not found",
+		})
+		return
+	}
 }

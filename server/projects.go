@@ -17,6 +17,7 @@ type Project struct {
 	Description string `json:"description"`
 	IsLocked    bool   `json:"isLocked"`
 	LearningId  string `json:"learningId"`
+	Progress    int    `json:"progress"`
 }
 
 func (s *Server) GetProjects(ctx *gin.Context) {
@@ -53,6 +54,32 @@ func (s *Server) GetProjects(ctx *gin.Context) {
 				"error": "Learning not found",
 			})
 		}
+		iter1 := s.Firestore.Client.Collection("sessions").Doc(id).Collection("tasks").Where("projectId", "==", mr.Id).Documents(context.Background())
+		docs1, err := iter1.GetAll()
+		if err != nil {
+			ctx.JSON(500, gin.H{
+				"error": "Learning not found",
+			})
+			return
+		}
+		p := 0
+		for _, doc1 := range docs1 {
+			// Process each document
+			var tr Task
+			err := doc1.DataTo(&tr)
+			if err != nil {
+				s.Logger.Error("Failed to get learning response", "error", err)
+				ctx.JSON(500, gin.H{
+					"error": "Learning not found",
+				})
+			}
+
+			if tr.Completed {
+				p++
+			}
+		}
+		mr.Progress = p
+
 		s.Logger.Debug("mr", mr)
 		resp = append(resp, mr)
 		s.Logger.Debug("resp", resp)

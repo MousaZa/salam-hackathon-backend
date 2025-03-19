@@ -2,9 +2,6 @@ package server
 
 import (
 	"context"
-	"encoding/json"
-	"fmt"
-	"strings"
 
 	"github.com/MousaZa/salam-hackathon-backend/models"
 	"github.com/gin-gonic/gin"
@@ -38,36 +35,5 @@ func (s *Server) RequestSuggest(ctx *gin.Context) {
 		return
 	}
 
-	var textContent string
-	for _, part := range resp.Candidates[0].Content.Parts {
-		if textPart, ok := part.(genai.Text); ok {
-			textContent += string(textPart)
-		}
-	}
-
-	fmt.Printf("Response: %s\n", textContent)
-
-	// The response is in the format: [```json {...} ```]
-	// We need to extract just the JSON part
-	jsonStart := strings.Index(textContent, "{")
-	jsonEnd := strings.LastIndex(textContent, "}")
-
-	if jsonStart < 0 || jsonEnd < 0 || jsonEnd <= jsonStart {
-		ctx.JSON(500, gin.H{
-			"error": "Invalid JSON response format",
-		})
-		return
-	}
-
-	jsonContent := textContent[jsonStart : jsonEnd+1]
-
-	sur := models.SuggestResponse{}
-	if err := json.Unmarshal([]byte(jsonContent), &sur); err != nil {
-		ctx.JSON(500, gin.H{
-			"error": err.Error(),
-		})
-		return
-	}
-
-	ctx.JSON(200, sur)
+	ctx.JSON(200, resp.Candidates[0].Content.Parts)
 }
