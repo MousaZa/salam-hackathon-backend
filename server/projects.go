@@ -18,6 +18,7 @@ type Project struct {
 	IsLocked    bool   `json:"isLocked"`
 	LearningId  string `json:"learningId"`
 	Progress    int    `json:"progress"`
+	TaskNum     int    `json:"tasknum"`
 }
 
 func (s *Server) GetProjects(ctx *gin.Context) {
@@ -63,6 +64,7 @@ func (s *Server) GetProjects(ctx *gin.Context) {
 			return
 		}
 		p := 0
+		tn := 0
 		for _, doc1 := range docs1 {
 			// Process each document
 			var tr Task
@@ -77,8 +79,10 @@ func (s *Server) GetProjects(ctx *gin.Context) {
 			if tr.Completed {
 				p++
 			}
+			tn++
 		}
 		mr.Progress = p
+		mr.TaskNum = tn
 
 		s.Logger.Debug("mr", mr)
 		resp = append(resp, mr)
